@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Engineering BCA automation on the Opentrons OT-2 · Jin Hyeok Kim</title>
+<meta property="og:title" content="Engineering BCA automation on the Opentrons OT-2 · Jin Hyeok Kim"><meta property="og:type" content="website">
+<meta name="description" content="Mass spectrometry. Proteomics. Laboratory automation."><meta name="robots" content="index, follow">
+<meta name="theme-color" content="#183c37"><link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../assets/site.css"><script src="../../assets/site.js" defer></script></head>
+<body><a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header shell"><a class="brand" href="../../" aria-label="Jin Hyeok Kim, home"><span class="monogram">JHK<span class="brand-dot"></span></span><span class="brand-name">Jin Hyeok Kim, PhD<br>Scientist &amp; researcher</span></a><nav class="nav" aria-label="Main navigation"><a href="../../work/" aria-current="page">Work</a><a href="../../about/">About</a><a href="../../publications/">Publications</a><a href="../../contact/" class="contact-link">Contact</a></nav></header>
+<main id="main" class="shell"><a class="back-link" href="../">← Back to all projects</a><header class="page-heading"><p class="eyebrow">Laboratory automation</p><h1>Engineering BCA automation on the Opentrons OT-2</h1><p>Custom Python protocols that connect liquid-height-aware transfers, controlled flow rates, and plate-scale BCA evaluation.</p></header><div class="project-meta"><span class="tag">Opentrons OT-2</span><span class="tag">Python</span><span class="tag">BCA assay</span><span>Updated 2026-11-16</span></div><section class="case-metrics" aria-label="Project overview"><div class="case-metric"><strong>20 µL</strong><span>Sample transfer per well</span></div><div class="case-metric"><strong>5 plates</strong><span>Initial BCA evaluation</span></div><div class="case-metric"><strong>2.96% CV</strong><span>Selected 8-well replicate set¹</span></div></section><article class="prose case-study"><h2 id="translating-a-bench-assay-into-a-controlled-workflow">Translating a bench assay into a controlled workflow</h2>
+<p>A liquid-handling robot can repeat a sequence of commands. Building a useful experimental workflow requires a more detailed question: <strong>where is the liquid, how should it move, and how will I know whether the result is repeatable?</strong></p>
+<p>I developed custom Python protocols for the Opentrons OT-2 to automate a peptide BCA workflow. The work connected dilution planning, eight-channel transfers, changing liquid heights, aspiration and dispensing behavior, and quantitative evaluation of plate-reader results.</p>
+<p>The assay format used <strong>20 µL of sample and 180 µL of working reagent per well</strong>. An initial five-plate experiment provided an opportunity to inspect both within-plate replicate variation and between-plate behavior. Those results informed a revised protocol with a different mixing and tip-use strategy.</p>
+<figure>
+<img src="../../assets/images/ot2-workflow-2026-11-16.svg" alt="A schematic of the OT-2 workflow: plan dilutions, calculate transfer positions, execute liquid handling, and evaluate BCA repeatability. This is a process illustration, not measured experimental data." />
+<figcaption aria-hidden="true">A schematic of the OT-2 workflow: plan dilutions, calculate transfer positions, execute liquid handling, and evaluate BCA repeatability. This is a process illustration, not measured experimental data.</figcaption>
+</figure>
+<h2 id="my-contribution">My contribution</h2>
+<p>I translated the bench workflow into configurable Python protocols, implemented volume-aware transfer logic, and used BCA testing to evaluate the automated workflow. My focus included:</p>
+<ul>
+<li>Selecting pipettes for the transfer volume: the P20 multichannel for 20 µL sample transfers and the P300 multichannel for larger reagent and dilution transfers.</li>
+<li>Tracking liquid remaining in each source and updating the intended aspiration position after every transfer.</li>
+<li>Defining aspiration and dispense Z positions relative to the calculated liquid level while maintaining a minimum bottom clearance.</li>
+<li>Controlling aspiration and dispensing rates for standards and samples.</li>
+<li>Planning standard dilutions, mixing, tips, and reservoir consumption before a run.</li>
+<li>Inspecting replicate results and distinguishing a successful individual condition from the performance of the entire assay.</li>
+</ul>
+<h2 id="liquid-position-is-part-of-the-method">Liquid position is part of the method</h2>
+<p>The protocol uses the liquid volume and the labware geometry to calculate a target height. This is <strong>model-based positioning</strong>, rather than a claim of sensor-based liquid-level detection.</p>
+<p>For aspiration, the source volume is updated to the amount expected to remain after the transfer. The target position is placed below that calculated surface, with a minimum distance above the bottom. For dispensing, the position is calculated from the expected final volume in the receiving well.</p>
+<p>The inspected implementation includes these settings:</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Control</th>
+<th>Implemented setting or rule</th>
+<th>Design purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aspiration depth</td>
+<td>3 mm below the estimated post-aspiration liquid level, subject to the bottom-clearance limit</td>
+<td>Keep the tip in the liquid as the source is depleted</td>
+</tr>
+<tr>
+<td>Bottom clearance</td>
+<td>At least 1 mm above the well bottom</td>
+<td>Bound the lowest commanded position</td>
+</tr>
+<tr>
+<td>Dispense position</td>
+<td>2 mm below the estimated final liquid surface, subject to the clearance limit</td>
+<td>Make the intended dispense location explicit</td>
+</tr>
+<tr>
+<td>Protein-handling flow rate</td>
+<td><code>rate=0.5</code> for aspiration and dispensing</td>
+<td>Use a controlled multiplier of each pipette’s default flow rate</td>
+</tr>
+<tr>
+<td>Reservoir consumption</td>
+<td>Account for eight tips drawing from one trough</td>
+<td>Keep the volume model consistent with multichannel use</td>
+</tr>
+<tr>
+<td>Setup checks</td>
+<td>Optional pauses at the exact transfer location and a separate plate-height check protocol</td>
+<td>Compare the intended location with the physical setup</td>
+</tr>
+</tbody>
+</table>
+<p>These are the configured settings in the inspected protocols, not universal operating recommendations for every liquid, labware, or pipette. Physical labware-position checks remain part of the setup.</p>
+<h2 id="designing-the-run-before-moving-the-robot">Designing the run before moving the robot</h2>
+<p>The protocol checks the planned experiment before liquid handling starts. It calculates the standard concentrations, predicts source consumption, checks destination capacity, and checks the required tip columns and available reagent volume.</p>
+<p>The revised protocol also reserves liquid rather than planning to aspirate each source down to its bottom. Working-reagent selection is based on remaining volume, and run parameters control the number of assay plates and setup options.</p>
+<p>This makes practical constraints explicit in the code: a transfer plan must be consistent not only with target concentrations, but also with the actual volumes and consumables available on the deck.</p>
+<h2 id="bca-evaluation-a-sub-5-result-with-its-conditions-defined">BCA evaluation: a sub-5% result, with its conditions defined</h2>
+<p><strong>¹At the 2.0 mg/mL standard, Plate 1 achieved a CV of 2.96% across eight replicate wells.</strong> Plate 5 at the same nominal concentration achieved <strong>4.31% CV</strong>. These values are calculated from concentrations back-calculated using each plate’s own quadratic standard curve.</p>
+<p>This is a demonstration of <strong>condition-specific assay repeatability</strong>. It is not a statement that every well group, concentration, or plate achieved CV below 5%, and it is not a direct volumetric certification of the pipette.</p>
+<figure>
+<img src="../../assets/figures/ot2-bca-within-plate-cv-2026-11-16.png" alt="Within-plate CV at 2.0 mg/mL for all five plates. Plate 1 is 2.96%, Plate 2 is 12.51%, Plate 3 is 5.67%, Plate 4 is 9.81%, and Plate 5 is 4.31%. Each group contains eight replicate wells and uses quadratic back-calculation." />
+<figcaption aria-hidden="true">Within-plate CV at 2.0 mg/mL for all five plates. Plate 1 is 2.96%, Plate 2 is 12.51%, Plate 3 is 5.67%, Plate 4 is 9.81%, and Plate 5 is 4.31%. Each group contains eight replicate wells and uses quadratic back-calculation.</figcaption>
+</figure>
+<table>
+<thead>
+<tr>
+<th>Nominal standard</th>
+<th>Plate</th>
+<th>Replicate wells</th>
+<th>Within-plate CV</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2.0 mg/mL</td>
+<td>1</td>
+<td>8</td>
+<td>2.96%</td>
+</tr>
+<tr>
+<td>2.0 mg/mL</td>
+<td>2</td>
+<td>8</td>
+<td>12.51%</td>
+</tr>
+<tr>
+<td>2.0 mg/mL</td>
+<td>3</td>
+<td>8</td>
+<td>5.67%</td>
+</tr>
+<tr>
+<td>2.0 mg/mL</td>
+<td>4</td>
+<td>8</td>
+<td>9.81%</td>
+</tr>
+<tr>
+<td>2.0 mg/mL</td>
+<td>5</td>
+<td>8</td>
+<td>4.31%</td>
+</tr>
+</tbody>
+</table>
+<p>CV here is the sample standard deviation divided by the mean, multiplied by 100, for an eight-well replicate group. A single well does not by itself define a replicate CV.</p>
+<p>The distinction matters because BCA results combine liquid handling, dilution preparation, mixing, incubation, plate reading, and calibration. The standard wells also contribute to the curve used for back-calculation, so this is not an independent quality-control validation.</p>
+<h2 id="the-full-evaluation-guided-the-next-iteration">The full evaluation guided the next iteration</h2>
+<p>I evaluated all seven nonzero standard levels across five plates, rather than treating a good calibration fit or one low CV as sufficient evidence of workflow performance. The analysis compared linear, quadratic, and four-parameter logistic calibration models.</p>
+<p>For transparency, the heatmap below shows all within-plate CV values for the stated quadratic model. Lower concentration levels and some plates showed greater variability. The initial run also included a room-temperature hold before incubation and no dedicated cool-down before reading; these conditions can contribute to the overall assay behavior and do not isolate pipetting error.</p>
+<figure>
+<img src="../../assets/figures/ot2-bca-all-levels-2026-11-16.png" alt="Heatmap of all seven standard levels and five plates for quadratic back-calculation, with the actual within-plate CV annotated in every cell. Variability is higher at several lower concentration levels." />
+<figcaption aria-hidden="true">Heatmap of all seven standard levels and five plates for quadratic back-calculation, with the actual within-plate CV annotated in every cell. Variability is higher at several lower concentration levels.</figcaption>
+</figure>
+<p><a href="../../assets/tables/ot2-bca-precision-summary-2026-11-16.csv">Download the derived precision summary for all three calibration models (CSV)</a>.</p>
+<p>The revised protocol responds to the experimental observations with:</p>
+<ul>
+<li><strong>Fresh sample tips for every column on every assay plate</strong>, rather than reusing a sample-tip column across plates.</li>
+<li><strong>Defined plate-shaker mixing checkpoints</strong> during standard preparation, replacing pipette mixing in the revised design.</li>
+<li><strong>A revised dilution plan</strong> with fewer serial dilution dependencies and a kit-style concentration series.</li>
+<li><strong>Residual-volume checks</strong> for sample and reservoir wells, together with volume-based reagent-source selection.</li>
+</ul>
+<p>The initial five-plate results and the revised protocol are different stages of the project. The revised code supports up to three assay plates; a new experimental run is needed to quantify its final performance. I do not attribute the earlier five-plate CV values to the revised protocol.</p>
+<h2 id="what-this-project-demonstrates">What this project demonstrates</h2>
+<p>The contribution is an experimental workflow encoded as explicit, inspectable decisions: <strong>liquid geometry, pipette selection, flow control, resource planning, physical checks, and evidence-based iteration</strong>.</p>
+<p>Rather than assuming that automation guarantees reproducibility, I used the assay results to identify which conditions were repeatable and where the workflow needed further work. That approach makes the protocol easier to troubleshoot, extend, and evaluate for the next plate-based experiment.</p>
+<h2 id="technical-references">Technical references</h2>
+<ul>
+<li><a href="https://docs.opentrons.com/python-api/reference/wells-liquids/">Opentrons: well geometry and volume-to-height calculation</a></li>
+<li><a href="https://docs.opentrons.com/python-api/reference/instruments/">Opentrons: aspiration and dispense commands and rate multipliers</a></li>
+</ul>
+<p><em>The project descriptions and figures summarize my own protocol-development and BCA evaluation work. The workflow illustration is schematic. No clinical sample data or unrelated research findings are included.</em></p>
+</article></main>
+<footer class="site-footer shell"><span>© 2026 Jin Hyeok Kim · Baltimore, Maryland</span><div class="footer-links"><a href="https://scholar.google.co.kr/citations?user=XxHI-3gAAAAJ&amp;hl=ko" rel="noopener noreferrer">Google Scholar ↗</a><a href="../../contact/">Get in touch ↗</a></div></footer></body></html>
