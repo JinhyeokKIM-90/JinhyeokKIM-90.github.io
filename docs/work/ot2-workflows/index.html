@@ -7,10 +7,10 @@
 <link rel="stylesheet" href="../../assets/site.css"><script src="../../assets/site.js" defer></script></head>
 <body><a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header shell"><a class="brand" href="../../" aria-label="Jin Hyeok Kim, home"><span class="monogram">JHK<span class="brand-dot"></span></span><span class="brand-name">Jin Hyeok Kim, PhD<br>Postdoctoral Fellow · Neurology</span></a><nav class="nav" aria-label="Main navigation"><a href="../../work/" aria-current="page">Work</a><a href="../../about/">About</a><a href="../../publications/">Publications</a><a href="../../contact/" class="contact-link">Contact</a></nav></header>
-<main id="main" class="shell"><a class="back-link" href="../">← Back to all projects</a><header class="page-heading"><p class="eyebrow">Laboratory automation</p><h1>Engineering BCA automation on the Opentrons OT-2</h1><p>Custom Python protocols that connect liquid-height-aware transfers, controlled flow rates, and plate-scale BCA evaluation.</p></header><div class="project-meta"><span class="tag">Opentrons OT-2</span><span class="tag">Python</span><span class="tag">BCA assay</span><span>Updated 2026-11-16</span></div><section class="case-metrics" aria-label="Project overview"><div class="case-metric"><strong>20 µL</strong><span>Sample transfer per well</span></div><div class="case-metric"><strong>5 plates</strong><span>Initial BCA evaluation</span></div><div class="case-metric"><strong>2.96% CV</strong><span>Selected 8-well replicate set¹</span></div></section><article class="prose case-study"><h2 id="translating-a-bench-assay-into-a-controlled-workflow">Translating a bench assay into a controlled workflow</h2>
+<main id="main" class="shell"><a class="back-link" href="../">← Back to all projects</a><header class="page-heading"><p class="eyebrow">Laboratory automation</p><h1>Engineering BCA automation on the Opentrons OT-2</h1><p>Custom Python protocols that connect liquid-height-aware transfers, controlled flow rates, and plate-scale BCA evaluation.</p></header><div class="project-meta"><span class="tag">Opentrons OT-2</span><span class="tag">Python</span><span class="tag">BCA assay</span><span>Updated 2026-11-17</span></div><section class="case-metrics" aria-label="Project overview"><div class="case-metric"><strong>20 µL</strong><span>Sample transfer per well</span></div><div class="case-metric"><strong>8 wells</strong><span>Plate 1 replicate group</span></div><div class="case-metric"><strong>2.96% CV</strong><span>Plate 1 · 2.0 mg/mL standard¹</span></div></section><article class="prose case-study"><h2 id="translating-a-bench-assay-into-a-controlled-workflow">Translating a bench assay into a controlled workflow</h2>
 <p>A liquid-handling robot can repeat a sequence of commands. Building a useful experimental workflow requires a more detailed question: <strong>where is the liquid, how should it move, and how will I know whether the result is repeatable?</strong></p>
 <p>I developed custom Python protocols for the Opentrons OT-2 to automate a peptide BCA workflow. The work connected dilution planning, eight-channel transfers, changing liquid heights, aspiration and dispensing behavior, and quantitative evaluation of plate-reader results.</p>
-<p>The assay format used <strong>20 µL of sample and 180 µL of working reagent per well</strong>. An initial five-plate experiment provided an opportunity to inspect both within-plate replicate variation and between-plate behavior. Those results informed a revised protocol with a different mixing and tip-use strategy.</p>
+<p>The assay format used <strong>20 µL of sample and 180 µL of working reagent per well</strong>. The result shown here is a focused example from <strong>Plate 1</strong>, using eight replicate wells at the 2.0 mg/mL standard. The case study emphasizes the protocol design and this specific repeatability example.</p>
 <figure>
 <img src="../../assets/images/ot2-workflow-2026-11-16.svg" alt="A schematic of the OT-2 workflow: plan dilutions, calculate transfer positions, execute liquid handling, and evaluate BCA repeatability. This is a process illustration, not measured experimental data." />
 <figcaption aria-hidden="true">A schematic of the OT-2 workflow: plan dilutions, calculate transfer positions, execute liquid handling, and evaluate BCA repeatability. This is a process illustration, not measured experimental data.</figcaption>
@@ -80,73 +80,16 @@
 <p>The protocol checks the planned experiment before liquid handling starts. It calculates the standard concentrations, predicts source consumption, checks destination capacity, and checks the required tip columns and available reagent volume.</p>
 <p>The revised protocol also reserves liquid rather than planning to aspirate each source down to its bottom. Working-reagent selection is based on remaining volume, and run parameters control the number of assay plates and setup options.</p>
 <p>This makes practical constraints explicit in the code: a transfer plan must be consistent not only with target concentrations, but also with the actual volumes and consumables available on the deck.</p>
-<h2 id="bca-evaluation-a-sub-5-result-with-its-conditions-defined">BCA evaluation: a sub-5% result, with its conditions defined</h2>
-<p><strong>¹At the 2.0 mg/mL standard, Plate 1 achieved a CV of 2.96% across eight replicate wells.</strong> Plate 5 at the same nominal concentration achieved <strong>4.31% CV</strong>. These values are calculated from concentrations back-calculated using each plate’s own quadratic standard curve.</p>
-<p>This is a demonstration of <strong>condition-specific assay repeatability</strong>. It is not a statement that every well group, concentration, or plate achieved CV below 5%, and it is not a direct volumetric certification of the pipette.</p>
+<h2 id="bca-repeatability-a-plate-1-example">BCA repeatability: a Plate 1 example</h2>
+<p><strong>¹Plate 1 achieved a CV of 2.96% across eight replicate wells at the 2.0 mg/mL standard.</strong> The values are concentrations back-calculated using Plate 1’s quadratic standard curve.</p>
 <figure>
-<img src="../../assets/figures/ot2-bca-within-plate-cv-2026-11-16.png" alt="Within-plate CV at 2.0 mg/mL for all five plates. Plate 1 is 2.96%, Plate 2 is 12.51%, Plate 3 is 5.67%, Plate 4 is 9.81%, and Plate 5 is 4.31%. Each group contains eight replicate wells and uses quadratic back-calculation." />
-<figcaption aria-hidden="true">Within-plate CV at 2.0 mg/mL for all five plates. Plate 1 is 2.96%, Plate 2 is 12.51%, Plate 3 is 5.67%, Plate 4 is 9.81%, and Plate 5 is 4.31%. Each group contains eight replicate wells and uses quadratic back-calculation.</figcaption>
+<img src="../../assets/figures/ot2-bca-plate1-replicates-2026-11-17.png" alt="Eight replicate wells A1 to H1 from Plate 1 at the 2.0 mg/mL standard. Quadratic back-calculated concentrations give a within-group CV of 2.96%." />
+<figcaption aria-hidden="true">Eight replicate wells A1 to H1 from Plate 1 at the 2.0 mg/mL standard. Quadratic back-calculated concentrations give a within-group CV of 2.96%.</figcaption>
 </figure>
-<table>
-<thead>
-<tr>
-<th>Nominal standard</th>
-<th>Plate</th>
-<th>Replicate wells</th>
-<th>Within-plate CV</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>2.0 mg/mL</td>
-<td>1</td>
-<td>8</td>
-<td>2.96%</td>
-</tr>
-<tr>
-<td>2.0 mg/mL</td>
-<td>2</td>
-<td>8</td>
-<td>12.51%</td>
-</tr>
-<tr>
-<td>2.0 mg/mL</td>
-<td>3</td>
-<td>8</td>
-<td>5.67%</td>
-</tr>
-<tr>
-<td>2.0 mg/mL</td>
-<td>4</td>
-<td>8</td>
-<td>9.81%</td>
-</tr>
-<tr>
-<td>2.0 mg/mL</td>
-<td>5</td>
-<td>8</td>
-<td>4.31%</td>
-</tr>
-</tbody>
-</table>
-<p>CV here is the sample standard deviation divided by the mean, multiplied by 100, for an eight-well replicate group. A single well does not by itself define a replicate CV.</p>
-<p>The distinction matters because BCA results combine liquid handling, dilution preparation, mixing, incubation, plate reading, and calibration. The standard wells also contribute to the curve used for back-calculation, so this is not an independent quality-control validation.</p>
-<h2 id="the-full-evaluation-guided-the-next-iteration">The full evaluation guided the next iteration</h2>
-<p>I evaluated all seven nonzero standard levels across five plates, rather than treating a good calibration fit or one low CV as sufficient evidence of workflow performance. The analysis compared linear, quadratic, and four-parameter logistic calibration models.</p>
-<p>For transparency, the heatmap below shows all within-plate CV values for the stated quadratic model. Lower concentration levels and some plates showed greater variability. The initial run also included a room-temperature hold before incubation and no dedicated cool-down before reading; these conditions can contribute to the overall assay behavior and do not isolate pipetting error.</p>
-<figure>
-<img src="../../assets/figures/ot2-bca-all-levels-2026-11-16.png" alt="Heatmap of all seven standard levels and five plates for quadratic back-calculation, with the actual within-plate CV annotated in every cell. Variability is higher at several lower concentration levels." />
-<figcaption aria-hidden="true">Heatmap of all seven standard levels and five plates for quadratic back-calculation, with the actual within-plate CV annotated in every cell. Variability is higher at several lower concentration levels.</figcaption>
-</figure>
-<p><a href="../../assets/tables/ot2-bca-precision-summary-2026-11-16.csv">Download the derived precision summary for all three calibration models (CSV)</a>.</p>
-<p>The revised protocol responds to the experimental observations with:</p>
-<ul>
-<li><strong>Fresh sample tips for every column on every assay plate</strong>, rather than reusing a sample-tip column across plates.</li>
-<li><strong>Defined plate-shaker mixing checkpoints</strong> during standard preparation, replacing pipette mixing in the revised design.</li>
-<li><strong>A revised dilution plan</strong> with fewer serial dilution dependencies and a kit-style concentration series.</li>
-<li><strong>Residual-volume checks</strong> for sample and reservoir wells, together with volume-based reagent-source selection.</li>
-</ul>
-<p>The initial five-plate results and the revised protocol are different stages of the project. The revised code supports up to three assay plates; a new experimental run is needed to quantify its final performance. I do not attribute the earlier five-plate CV values to the revised protocol.</p>
+<p>CV is the sample standard deviation divided by the mean, multiplied by 100, across these eight wells. This is a <strong>selected, condition-specific BCA assay repeatability result</strong>, rather than a claim about all concentrations, the whole plate, or independently measured pipette-volume precision. The standard series was also used to fit the calibration curve; this example is not an independent QC validation.</p>
+<h2 id="iterating-the-protocol">Iterating the protocol</h2>
+<p>Experimental evaluation informed changes to tip use, mixing checkpoints, dilution planning, and residual-volume checks. The revised design uses fresh sample tips for each assay-plate column, defined plate-shaker mixing steps, and volume-based reagent-source selection.</p>
+<p>The Plate 1 example above comes from the initial evaluation. It is not presented as a performance validation of the later revised code.</p>
 <h2 id="what-this-project-demonstrates">What this project demonstrates</h2>
 <p>The contribution is an experimental workflow encoded as explicit, inspectable decisions: <strong>liquid geometry, pipette selection, flow control, resource planning, physical checks, and evidence-based iteration</strong>.</p>
 <p>Rather than assuming that automation guarantees reproducibility, I used the assay results to identify which conditions were repeatable and where the workflow needed further work. That approach makes the protocol easier to troubleshoot, extend, and evaluate for the next plate-based experiment.</p>
